@@ -9,4 +9,3 @@
 4. To deploy on testnet, run `npx hardhat run --network kovan scripts/deploy.js`
 5. Step 4 will log the command to verify the contract on Etherscan, enter that command.
 6. To deploy on mainnet run `npx hardhat run --network mainnet scripts/deploy.js`
-
