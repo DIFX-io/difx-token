@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.6;
+pragma solidity >= 0.7.6;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "./ERC20.sol";
 
 contract DIFXToken is ERC20("DIFXToken", "Difx") {
     address public governance;
@@ -42,7 +42,8 @@ contract DIFXToken is ERC20("DIFXToken", "Difx") {
         address _coreTeam,
         address _airdrops,
         address _advisory,
-        address _bounty
+        address _bounty,
+        address _development
     ) {
         governance = _governance;
 
@@ -63,7 +64,7 @@ contract DIFXToken is ERC20("DIFXToken", "Difx") {
 
         // mint for Strategic Development
         _mint(_strategicDevelopment, 110000000 * 1e18);
-        developmentAllowedSupply = 66000000 * 1e18;
+        developmentAllowedSupply = 110000000 * 1e18;
 
         // mint for Founders
         _mint(_founders, 66000000 * 1e18);
@@ -83,49 +84,39 @@ contract DIFXToken is ERC20("DIFXToken", "Difx") {
         _mint(_bounty, 5500000 * 1e18);
 
         startTime = block.timestamp;
+
+        development = _development;
+
+        founders = _founders;
+
+        coreTeam = _coreTeam;
     }
 
-    function transfer(address recipient, uint256 amount)
-        public
-        override
-        returns (bool)
-    {
-        if (oneYearVesting[msg.sender] == true) {
-            if (startTime + 31536000 > block.timestamp) {
-                transfer(recipient, amount);
-            } else {
-                revert("prohibited");
-            }
+    function transfer(address recipient, uint256 amount) public returns (bool) {
+        if (oneYearVesting[msg.sender]) {
+            require(!(startTime + 31536000 >= block.timestamp), "prohibited");
+            internalTransfer(recipient, amount);
         } else if (twoYearVesting[msg.sender] == true) {
-            if (startTime + 31536000 * 2 > block.timestamp) {
-                transfer(recipient, amount);
-            } else {
-                revert("prohibited");
-            }
+            require(!(startTime + 31536000 * 2 >= block.timestamp), "prohibited");
+            internalTransfer(recipient, amount);
         } else {
-            transfer(recipient, amount);
+            internalTransfer(recipient, amount);
         }
     }
 
     function transferFrom(
         address sender,
         address recipient,
-        address amount
-    ) public {
-        if (oneYearVesting[sender] == true) {
-            if (startTime + 31536000 > block.timestamp) {
-                transferFrom(sender, recipient, amount);
-            } else {
-                revert("prohibited");
-            }
-        } else if (twoYearVesting[sender] == true) {
-            if (startTime + 31536000 * 2 > block.timestamp) {
-                transferFrom(sender, recipient, amount);
-
-                revert("prohibited");
-            }
+        uint256 amount
+    ) public returns (bool) {
+        if (oneYearVesting[sender]) {
+            require(!(startTime + 31536000 >= block.timestamp), "prohibited");
+            internalTransferFrom(sender, recipient, amount);
+        } else if (twoYearVesting[sender]) {
+            require(!(startTime + 31536000 * 2 >= block.timestamp), "prohibited");
+            internalTransferFrom(sender, recipient, amount);
         } else {
-            transferFrom(sender, recipient, amount);
+            internalTransferFrom(sender, recipient, amount);
         }
     }
 
@@ -153,7 +144,7 @@ contract DIFXToken is ERC20("DIFXToken", "Difx") {
             transfer(_to, tokensToRelease);
         } else {
             require(
-                developmentClaimedSupply <= developmentAllowedSupply + 2,
+                developmentClaimedSupply <= developmentAllowedSupply,
                 "token: let the quarter over"
             );
             require(
@@ -178,7 +169,7 @@ contract DIFXToken is ERC20("DIFXToken", "Difx") {
             transfer(_to, tokensToRelease);
         } else {
             require(
-                founderClaimedSupply <= founderAllowedSupply + 2,
+                founderClaimedSupply <= founderAllowedSupply,
                 "token: let the quarter over"
             );
             require(
@@ -202,7 +193,7 @@ contract DIFXToken is ERC20("DIFXToken", "Difx") {
             transfer(_to, tokensToRelease);
         } else {
             require(
-                coreTeamClaimedSupply <= coreTeamAllowedSupply + 2,
+                coreTeamClaimedSupply <= coreTeamAllowedSupply,
                 "token: let the quarter over"
             );
             require(
