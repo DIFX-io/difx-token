@@ -95,12 +95,12 @@ contract DIFXToken is ERC20("DIFXToken", "Difx") {
     function transfer(address recipient, uint256 amount) public returns (bool) {
         if (oneYearVesting[msg.sender]) {
             require(!(startTime + 31536000 >= block.timestamp), "prohibited");
-            internalTransfer(recipient, amount);
+            return internalTransfer(recipient, amount);
         } else if (twoYearVesting[msg.sender] == true) {
             require(!(startTime + 31536000 * 2 >= block.timestamp), "prohibited");
-            internalTransfer(recipient, amount);
+            return internalTransfer(recipient, amount);
         } else {
-            internalTransfer(recipient, amount);
+            return internalTransfer(recipient, amount);
         }
     }
 
@@ -111,12 +111,12 @@ contract DIFXToken is ERC20("DIFXToken", "Difx") {
     ) public returns (bool) {
         if (oneYearVesting[sender]) {
             require(!(startTime + 31536000 >= block.timestamp), "prohibited");
-            internalTransferFrom(sender, recipient, amount);
+            return internalTransferFrom(sender, recipient, amount);
         } else if (twoYearVesting[sender]) {
             require(!(startTime + 31536000 * 2 >= block.timestamp), "prohibited");
-            internalTransferFrom(sender, recipient, amount);
+            return internalTransferFrom(sender, recipient, amount);
         } else {
-            internalTransferFrom(sender, recipient, amount);
+            return internalTransferFrom(sender, recipient, amount);
         }
     }
 
