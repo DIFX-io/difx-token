@@ -24,19 +24,19 @@ contract DIFXToken is ERC20("DIFXToken", "Difx") {
     uint256 claimedTwoYearVesting;
 
     // strategic development supply details
-    address immutable development;
+    address development;
     uint256 public developmentLastClaimed;
     uint256 public developmentAllowedSupply;
     uint256 public developmentClaimedSupply;
 
     // founders and affilates supply details
-    address immutable founders;
+    address founders;
     uint256 public founderLastClaimed;
     uint256 public founderAllowedSupply;
     uint256 public founderClaimedSupply;
 
     // core team supply details
-    address immutable coreTeam;
+    address coreTeam;
     uint256 public coreTeamLastClaimed;
     uint256 public coreTeamAllowedSupply;
     uint256 public coreTeamClaimedSupply;
@@ -67,6 +67,9 @@ contract DIFXToken is ERC20("DIFXToken", "Difx") {
 
         // mint for private sale with 1 years vesting
         _mint(address(this), 74250000 * 1e18);
+
+        allowedOneYearVesting = 37125000 * 1e18;
+        allowedTwoYearVesting = 37125000 * 1e18;
 
         // mint for Public Sale
         _mint(_publicSale, 99000000 * 1e18);
