@@ -2,6 +2,7 @@ const { expect } = require("chai");
 
 let _governance;
 let _publicSale;
+let _privateSale;
 let _launchpad;
 let _staking;
 let _strategicDevelopment;
@@ -21,6 +22,7 @@ beforeEach(async function () {
   [
     _governance,
     _publicSale,
+    _privateSale,
     _launchpad,
     _staking,
     _strategicDevelopment,
@@ -41,7 +43,6 @@ beforeEach(async function () {
     _publicSale.address,
     _launchpad.address,
     _staking.address,
-    _strategicDevelopment.address,
     _founders.address,
     _coreTeam.address,
     _airdrops.address,
@@ -68,18 +69,17 @@ describe("Token", function () {
     expect(await token.balanceOf(_staking.address)).to.equal(toGwei(55000000));
   });
 
-  it("Should pre-mint 110000000 tokens for strategic development", async function () {
-    expect(await token.balanceOf(_strategicDevelopment.address)).to.equal(toGwei(110000000));
+  it("Should allow 110000000 tokens for strategic development", async function () {
+    expect(await token.developmentAllowedSupply()).to.equal(toGwei(110000000));
   });
 
-  it("Should pre-mint 66000000 tokens for founders and affilates", async function () {
-    expect(await token.balanceOf(_founders.address)).to.equal(toGwei(66000000));
+  it("Should allow 66000000 tokens for founders and affilates", async function () {
+    expect(await token.founderAllowedSupply()).to.equal(toGwei(66000000));
   });
 
-  it("Should pre-mint 27500000 tokens for core team", async function () {
-    expect(await token.balanceOf(_coreTeam.address)).to.equal(toGwei(27500000));
+  it("Should allow 27500000 tokens for core team", async function () {
+    expect(await token.coreTeamAllowedSupply()).to.equal(toGwei(27500000));
   });
-
 
   it("Should pre-mint 27500000 tokens for airdrops", async function () {
     expect(await token.balanceOf(_airdrops.address)).to.equal(toGwei(27500000));
@@ -93,14 +93,26 @@ describe("Token", function () {
     expect(await token.balanceOf(_bounty.address)).to.equal(toGwei(5500000));
   });
 
-  it("Should pre-mint 74250000 tokens to the contract", async function () {
-    expect(await token.balanceOf(token.address)).to.equal(toGwei(74250000));
+  it("Should pre-mint 277750000 tokens to the contract", async function () {
+    expect(await token.balanceOf(token.address)).to.equal(toGwei(277750000));
   });
 
   // test main functions
-  it("Should claim development reward correctly", async function () {
+  it("Should check if vesting is getting added", async function () {
+    // add 2 users to vesting
+    await token.connect(_governance).addToVesting(
+      [
+        [test1.address, 100],
+        [test2.address, 200],
+      ],
+      "1"
+    );
 
+    await token.connect(test1).claim();
   });
+
+  // test main functions
+  it("Should claim development reward correctly", async function () {});
 
   it("Should claim founders reward correctly", async function () {});
 
@@ -109,9 +121,13 @@ describe("Token", function () {
   // test vesting
   it("Should test 1 year vesting period", async function () {
     // add 2 users to vesting
-    await token
-      .connect(_governance)
-      .addToVesting([test1.address, test2.address], "1");
+    await token.connect(_governance).addToVesting(
+      [
+        [test1.address, 100],
+        [test2.address, 200],
+      ],
+      "1"
+    );
 
     // transfer some tokens to user A
     await token.connect(_launchpad).transfer(test1.address, toGwei(1000));
@@ -123,9 +139,13 @@ describe("Token", function () {
   it("Should test 2 year vesting period", async function () {
     // expect(await token.balanceOf(_bounty.address)).to.equal(toGwei(5500000));
     // add 2 users to vesting
-    await token
-      .connect(_governance)
-      .addToVesting([test1.address, test2.address], "2");
+    await token.connect(_governance).addToVesting(
+      [
+        [test1.address, 100],
+        [test2.address, 200],
+      ],
+      "1"
+    );
 
     // transfer some tokens to user A
     await token.connect(_launchpad).transfer(test1.address, toGwei(1000));

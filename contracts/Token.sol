@@ -1,40 +1,47 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.7.6;
+pragma solidity 0.7.6;
 // pragma abicoder v2;
 pragma abicoder v2;
 
-import "./ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 contract DIFXToken is ERC20("DIFXToken", "Difx") {
     using SafeMath for uint256;
 
-    address public governance;
+    address public immutable governance;
 
-    uint256 public startTime;
+    uint256 public immutable startTime;
 
     mapping(address => uint256) public oneYearVesting;
     mapping(address => uint256) public twoYearVesting;
 
+    // total supply allowed for one and two year vesting
+    uint256 allowedOneYearVesting;
+    uint256 claimedOneYearVesting;
+
+    uint256 allowedTwoYearVesting;
+    uint256 claimedTwoYearVesting;
+
     // strategic development supply details
-    address development;
+    address immutable development;
     uint256 public developmentLastClaimed;
     uint256 public developmentAllowedSupply;
     uint256 public developmentClaimedSupply;
 
     // founders and affilates supply details
-    address founders;
+    address immutable founders;
     uint256 public founderLastClaimed;
     uint256 public founderAllowedSupply;
     uint256 public founderClaimedSupply;
 
     // core team supply details
-    address coreTeam;
+    address immutable coreTeam;
     uint256 public coreTeamLastClaimed;
     uint256 public coreTeamAllowedSupply;
     uint256 public coreTeamClaimedSupply;
 
-    uint256 QUARTER = 7776000;
+    uint256 immutable QUARTER = 7776000;
 
     struct VestingData {
         address user;
@@ -54,13 +61,12 @@ contract DIFXToken is ERC20("DIFXToken", "Difx") {
         address _airdrops,
         address _advisory,
         address _bounty,
-        address _development,
-        address _privateSale
+        address _development
     ) {
         governance = _governance;
 
         // mint for private sale with 1 years vesting
-        _mint(_privateSale, 74250000 * 1e18);
+        _mint(address(this), 74250000 * 1e18);
 
         // mint for Public Sale
         _mint(_publicSale, 99000000 * 1e18);
@@ -101,41 +107,35 @@ contract DIFXToken is ERC20("DIFXToken", "Difx") {
         coreTeam = _coreTeam;
     }
 
-    function transfer(address recipient, uint256 amount) public returns (bool) {
-        if (oneYearVesting[msg.sender] <= amount) {
+    // claim tokens
+    function claim() public {
+        require(
+            oneYearVesting[msg.sender] > 0 || twoYearVesting[msg.sender] > 0,
+            "not allowed"
+        );
+        if (oneYearVesting[msg.sender] > 0) {
+            uint256 amount = oneYearVesting[msg.sender];
+            // check if one year has been passed
             require(!(startTime + 31536000 >= block.timestamp), "prohibited");
-            oneYearVesting[msg.sender] = oneYearVesting[msg.sender].sub(amount);
-            return internalTransfer(recipient, amount);
-        } else if (twoYearVesting[msg.sender] <= amount) {
             require(
-                !(startTime + 31536000 * 2 >= block.timestamp),
-                "prohibited"
+                claimedOneYearVesting.add(amount) <= allowedOneYearVesting,
+                "limit exceeded"
             );
-            twoYearVesting[msg.sender] = twoYearVesting[msg.sender].sub(amount);
-            return internalTransfer(recipient, amount);
-        } else {
-            return internalTransfer(recipient, amount);
+            oneYearVesting[msg.sender] = 0;
+            claimedOneYearVesting = claimedOneYearVesting.add(amount);
+            transfer(msg.sender, amount);
         }
-    }
-
-    function transferFrom(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) public returns (bool) {
-        if (oneYearVesting[sender] <= amount) {
+        if (twoYearVesting[msg.sender] > 0) {
+            uint256 amount = twoYearVesting[msg.sender];
+            // check if two years has been passed
             require(!(startTime + 31536000 >= block.timestamp), "prohibited");
-            oneYearVesting[sender] = oneYearVesting[sender].sub(amount);
-            return internalTransferFrom(sender, recipient, amount);
-        } else if (twoYearVesting[sender] <= amount) {
             require(
-                !(startTime + 31536000 * 2 >= block.timestamp),
-                "prohibited"
+                claimedTwoYearVesting.add(amount) <= claimedOneYearVesting,
+                "limit exceeded"
             );
-            twoYearVesting[sender] = twoYearVesting[sender].sub(amount);
-            return internalTransferFrom(sender, recipient, amount);
-        } else {
-            return internalTransferFrom(sender, recipient, amount);
+            twoYearVesting[msg.sender] = 0;
+            claimedTwoYearVesting = claimedTwoYearVesting.add(amount);
+            transfer(msg.sender, amount);
         }
     }
 
